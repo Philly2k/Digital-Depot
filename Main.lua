@@ -1,244 +1,26 @@
--- Tha Bronx 3 Kool Aid Infinite Money (Compatible: Xeno/Velocity/Bunni)
--- Key: Trident123 | Universal Request | Session Auth | Remember Key
+-- Tha Bronx 3 Kool Aid Infinite Money (Compatible: Velocity + Most Executors - Exclude Solara/Xeno)
+-- Removed Key System | Fixed Load (Wait Game Load) | Fixed Errors (Pcalls + Nil Checks)
 -- Undetect: Delays/PCalls/Synonyms | Prompt-Based (Low Risk)
 -- Webhook Logs Exec (Display/User/Exec/Time/Count/Avatar)
 -- 2026 Compatible - Tested Patterns
--- NEW: Infinite Stamina/Hunger/Sleep (Local Loops + GUI Set)
+-- NEW: Infinite Stamina/Hunger/Sleep (Local Loops + GUI Set - Pcall Wrapped)
 -- Anti-Cheat Bypass: Extra Obfuscation, Hook Nulls, Random Seeds (Low Ban Risk - Client-Side Only)
 
-local KEY = "Trident123"
-local discordLink = "https://discord.gg/example"  -- REPLACE WITH YOUR DISCORD SERVER LINK!
-getgenv().Authorized = getgenv().Authorized or false
-getgenv().RememberKey = getgenv().RememberKey or false
-getgenv().SavedKey = getgenv().SavedKey or ""
-
--- Auto-auth if remembered and valid
-if getgenv().RememberKey and getgenv().SavedKey == KEY then
-   getgenv().Authorized = true
+-- Exclude Solara/Xeno
+local exec = (identifyexecutor and identifyexecutor()) or (getexecutorname and getexecutorname()) or "Unknown"
+if exec:lower():find("solara") or exec:lower():find("xeno") then
+   print("Executor not supported: " .. exec)
+   return
 end
 
-if not getgenv().Authorized then
-   -- Key System UI (Loads First)
-   local ScreenGui = Instance.new("ScreenGui")
-   ScreenGui.Name = "KeyAuth"
-   ScreenGui.Parent = game:GetService("CoreGui")
-   ScreenGui.ResetOnSpawn = false
-   
-   local MainFrame = Instance.new("Frame")
-   MainFrame.Name = "MainFrame"
-   MainFrame.Parent = ScreenGui
-   MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-   MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-   MainFrame.BorderSizePixel = 0
-   MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-   MainFrame.Size = UDim2.new(0, 400, 0, 300)  -- Increased height for new buttons
-   
-   local UICorner = Instance.new("UICorner")
-   UICorner.CornerRadius = UDim.new(0, 16)
-   UICorner.Parent = MainFrame
-   
-   local UIGradient = Instance.new("UIGradient")
-   UIGradient.Color = ColorSequence.new{
-      ColorSequenceKeypoint.new(0.00, Color3.fromRGB(35, 35, 45)),
-      ColorSequenceKeypoint.new(1.00, Color3.fromRGB(20, 20, 25))
-   }
-   UIGradient.Rotation = 45
-   UIGradient.Parent = MainFrame
-   
-   local Title = Instance.new("TextLabel")
-   Title.Name = "Title"
-   Title.Parent = MainFrame
-   Title.BackgroundTransparency = 1
-   Title.Position = UDim2.new(0, 0, 0, 20)
-   Title.Size = UDim2.new(1, 0, 0, 50)
-   Title.Font = Enum.Font.GothamBold
-   Title.Text = "Tha Bronx 3 Hub 💧"
-   Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-   Title.TextScaled = true
-   Title.TextSize = 24
-   
-   local Subtitle = Instance.new("TextLabel")
-   Subtitle.Name = "Subtitle"
-   Subtitle.Parent = MainFrame
-   Subtitle.BackgroundTransparency = 1
-   Subtitle.Position = UDim2.new(0, 0, 0, 65)
-   Subtitle.Size = UDim2.new(1, 0, 0, 30)
-   Subtitle.Font = Enum.Font.Gotham
-   Subtitle.Text = "Enter Key to Unlock Infinite Money"
-   Subtitle.TextColor3 = Color3.fromRGB(200, 200, 200)
-   Subtitle.TextScaled = true
-   Subtitle.TextSize = 16
-   
-   local TextBox = Instance.new("TextBox")
-   TextBox.Name = "KeyInput"
-   TextBox.Parent = MainFrame
-   TextBox.AnchorPoint = Vector2.new(0.5, 0.5)
-   TextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-   TextBox.BorderSizePixel = 0
-   TextBox.Position = UDim2.new(0.5, 0, 0.35, 0)
-   TextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-   TextBox.PlaceholderText = "Trident123"
-   TextBox.Size = UDim2.new(0.85, 0, 0, 50)
-   TextBox.Font = Enum.Font.Gotham
-   TextBox.Text = ""
-   TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-   TextBox.TextScaled = true
-   TextBox.TextSize = 18
-   
-   local TBCorner = Instance.new("UICorner")
-   TBCorner.CornerRadius = UDim.new(0, 12)
-   TBCorner.Parent = TextBox
-   
-   -- Remember Key Checkbox
-   local RememberFrame = Instance.new("Frame")
-   RememberFrame.Name = "RememberFrame"
-   RememberFrame.Parent = MainFrame
-   RememberFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-   RememberFrame.BorderSizePixel = 0
-   RememberFrame.Position = UDim2.new(0.075, 0, 0.5, 0)
-   RememberFrame.Size = UDim2.new(0.85, 0, 0, 40)
-   
-   local RemCorner = Instance.new("UICorner")
-   RemCorner.CornerRadius = UDim.new(0, 8)
-   RemCorner.Parent = RememberFrame
-   
-   local RememberLabel = Instance.new("TextLabel")
-   RememberLabel.Name = "RememberLabel"
-   RememberLabel.Parent = RememberFrame
-   RememberLabel.BackgroundTransparency = 1
-   RememberLabel.Position = UDim2.new(0.1, 0, 0, 0)
-   RememberLabel.Size = UDim2.new(0.8, 0, 1, 0)
-   RememberLabel.Font = Enum.Font.Gotham
-   RememberLabel.Text = "Remember Key"
-   RememberLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-   RememberLabel.TextSize = 16
-   RememberLabel.TextXAlignment = Enum.TextXAlignment.Left
-   
-   local CheckBox = Instance.new("TextButton")
-   CheckBox.Name = "CheckBox"
-   CheckBox.Parent = RememberFrame
-   CheckBox.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
-   CheckBox.BorderSizePixel = 0
-   CheckBox.Position = UDim2.new(0, 0, 0, 0)
-   CheckBox.Size = UDim2.new(0, 40, 1, 0)
-   CheckBox.Font = Enum.Font.GothamBold
-   CheckBox.Text = getgenv().RememberKey and "✔" or ""
-   CheckBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-   CheckBox.TextSize = 20
-   
-   local CheckCorner = Instance.new("UICorner")
-   CheckCorner.CornerRadius = UDim.new(0, 8)
-   CheckCorner.Parent = CheckBox
-   
-   CheckBox.MouseButton1Click:Connect(function()
-      getgenv().RememberKey = not getgenv().RememberKey
-      CheckBox.Text = getgenv().RememberKey and "✔" or ""
-   end)
-   
-   local VerifyButton = Instance.new("TextButton")
-   VerifyButton.Name = "Verify"
-   VerifyButton.Parent = MainFrame
-   VerifyButton.BackgroundColor3 = Color3.fromRGB(0, 162, 255)
-   VerifyButton.BorderSizePixel = 0
-   VerifyButton.Position = UDim2.new(0.075, 0, 0.6, 0)
-   VerifyButton.Size = UDim2.new(0.85, 0, 0, 45)
-   VerifyButton.Font = Enum.Font.GothamBold
-   VerifyButton.Text = "VERIFY KEY"
-   VerifyButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-   VerifyButton.TextScaled = true
-   VerifyButton.TextSize = 16
-   
-   local BtnCorner = Instance.new("UICorner")
-   BtnCorner.CornerRadius = UDim.new(0, 12)
-   BtnCorner.Parent = VerifyButton
-   
-   local BtnGradient = Instance.new("UIGradient")
-   BtnGradient.Color = ColorSequence.new{
-      ColorSequenceKeypoint.new(0.00, Color3.fromRGB(0, 140, 255)),
-      ColorSequenceKeypoint.new(1.00, Color3.fromRGB(0, 162, 255))
-   }
-   BtnGradient.Rotation = 0
-   BtnGradient.Parent = VerifyButton
-   
-   -- Join Discord Button
-   local DiscordButton = Instance.new("TextButton")
-   DiscordButton.Name = "Discord"
-   DiscordButton.Parent = MainFrame
-   DiscordButton.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
-   DiscordButton.BorderSizePixel = 0
-   DiscordButton.Position = UDim2.new(0.075, 0, 0.75, 0)
-   DiscordButton.Size = UDim2.new(0.85, 0, 0, 45)
-   DiscordButton.Font = Enum.Font.GothamBold
-   DiscordButton.Text = "JOIN DISCORD"
-   DiscordButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-   DiscordButton.TextScaled = true
-   DiscordButton.TextSize = 16
-   
-   local DiscCorner = Instance.new("UICorner")
-   DiscCorner.CornerRadius = UDim.new(0, 12)
-   DiscCorner.Parent = DiscordButton
-   
-   local DiscGradient = Instance.new("UIGradient")
-   DiscGradient.Color = ColorSequence.new{
-      ColorSequenceKeypoint.new(0.00, Color3.fromRGB(78, 91, 232)),
-      ColorSequenceKeypoint.new(1.00, Color3.fromRGB(88, 101, 242))
-   }
-   DiscGradient.Rotation = 0
-   DiscGradient.Parent = DiscordButton
-   
-   DiscordButton.MouseButton1Click:Connect(function()
-      setclipboard(discordLink)
-      local CopyMessage = Instance.new("TextLabel")
-      CopyMessage.Name = "CopyMsg"
-      CopyMessage.Parent = ScreenGui
-      CopyMessage.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-      CopyMessage.BorderSizePixel = 0
-      CopyMessage.Position = UDim2.new(0.5, 0, 0.8, 0)
-      CopyMessage.AnchorPoint = Vector2.new(0.5, 0.5)
-      CopyMessage.Size = UDim2.new(0, 300, 0, 50)
-      CopyMessage.Font = Enum.Font.Gotham
-      CopyMessage.Text = "Discord link copied! Paste in website."
-      CopyMessage.TextColor3 = Color3.fromRGB(255, 255, 255)
-      CopyMessage.TextSize = 16
-      CopyMessage.TextWrapped = true
-      
-      local MsgCorner = Instance.new("UICorner")
-      MsgCorner.CornerRadius = UDim.new(0, 12)
-      MsgCorner.Parent = CopyMessage
-      
-      task.delay(7, function()
-         if CopyMessage then CopyMessage:Destroy() end
-      end)
-   end)
-   
-   local function authorize()
-      getgenv().Authorized = true
-      if getgenv().RememberKey then
-         getgenv().SavedKey = KEY
-      end
-      ScreenGui:Destroy()
-   end
-   
-   VerifyButton.MouseButton1Click:Connect(function()
-      if TextBox.Text == KEY then
-         authorize()
-      else
-         TextBox.Text = ""
-         TextBox.PlaceholderText = "Wrong Key!"
-      end
-   end)
-   
-   TextBox.FocusLost:Connect(function(enterPressed)
-      if enterPressed and TextBox.Text == KEY then
-         authorize()
-      end
-   end)
-   
-   -- Loop until authorized
-   repeat task.wait() until getgenv().Authorized
-end
+-- Wait Game Load
+repeat task.wait() until game:IsLoaded()
+local LocalPlayer = game.Players.LocalPlayer
+repeat task.wait() until LocalPlayer.PlayerGui:FindFirstChild("BronxLoadscreen")
+firesignal(LocalPlayer.PlayerGui.BronxLoadscreen.Frame.play.MouseButton1Click)
+repeat task.wait() until not LocalPlayer.PlayerGui:FindFirstChild("BronxLoadscreen")
 
--- Universal HTTP Request (Xeno/Velocity/Bunni Compatible)
+-- Universal HTTP Request (Velocity Compatible - Removed Xeno Specific)
 local http_request = (syn and syn.request) or (http and http.request) or request or http_request or function() end
 
 -- Synonym funcs (extra obfuscation for bypass)
@@ -290,14 +72,13 @@ local function sendWebhook()
    local execTime = os.date("%Y-%m-%d %H:%M:%S")
    local avatarUrl = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=420&height=420&format=png"
    
-   -- Expanded Executor Detection
+   -- Executor Detection (Removed Xeno Specific)
    local executor = "Unknown"
    if getexecutorname then executor = getexecutorname()
    elseif identifyexecutor then executor = identifyexecutor()
-   elseif syn then executor = "Synapse/Velocity/Xeno"
+   elseif syn then executor = "Synapse/Velocity"
    elseif fluxus then executor = "Fluxus"
-   elseif bunni then executor = "Bunni"
-   elseif xeno then executor = "Xeno" end
+   elseif bunni then executor = "Bunni" end
    
    local message = {
       ["content"] = "Script Executed!",
@@ -328,13 +109,13 @@ end
 -- Send delayed
 task.spawn(function() safeWait(math.random(1,3)) sendWebhook() end)
 
--- Load Rayfield (All Compatible)
+-- Load Rayfield (Velocity Compatible)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "Tha Bronx 3 Kool Aid Hub 💧",
-   LoadingTitle = "Key Verified - Infinite Loader",
-   LoadingSubtitle = "by Grok | Xeno/Vel/Bunni OK",
+   LoadingTitle = "Infinite Loader",
+   LoadingSubtitle = "by Grok | Velocity + Most OK",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "ThaBronxKoolAid",
@@ -358,10 +139,10 @@ local SellPrompt = IceFruitSell:WaitForChild("ProximityPrompt")
 
 local Leaderstats = getPlayer():WaitForChild("leaderstats")
 local Cash = Leaderstats:WaitForChild("Cash")
-local Bank = Leaderstats:WaitForChild("Bank")
 
 -- Utilities
 local function findDescendant(parent, path)
+   if not parent then return nil end
    local parts = string.split(path, "/")
    local current = parent
    for _, part in ipairs(parts) do
@@ -445,11 +226,9 @@ local function cookKoolAid()
       getHum():EquipTool(tool)
       safeWait(0.5)
       safePcall(firePrompt, cookPrompt)
-      -- Wait for consume (tool removed)
       repeat safeWait(0.1) until not findTool(tool.Name)
    end
 
-   -- Wait cook done
    repeat safeWait(0.2) until not cookProgress.Enabled
 
    safeTP(cookPart.Position)
@@ -463,7 +242,7 @@ local function cookKoolAid()
    Rayfield:Notify({Title = "Cooked!", Content = "TP to Sell Spot & Hit Infinite Money!", Duration = 4})
 end
 
--- Infinite Stamina/Hunger/Sleep/Anti (Client-Side Loops)
+-- Infinite Stamina/Hunger/Sleep/Anti (Client-Side Loops - Pcall Wrapped)
 getgenv().InfStats = {
    Stamina = true,
    Hunger = true,
@@ -475,18 +254,24 @@ task.spawn(function()
       safeWait(0.05 + math.random()/10)  -- Random for AC bypass
       local HUD = getPlayer().PlayerGui:FindFirstChild("HUD") or getPlayer().PlayerGui:FindFirstChild("MainGui")
       if HUD then
-         if InfStats.Stamina then
-            local staminaBar = HUD:FindFirstChild("StaminaBar") or findDescendant(HUD, "Stamina/Bar/Fill")
-            if staminaBar then staminaBar.Size = UDim2.new(1,0,1,0) end
-         end
-         if InfStats.Hunger then
-            local hungerBar = HUD:FindFirstChild("HungerBar") or findDescendant(HUD, "Hunger/Bar/Fill")
-            if hungerBar then hungerBar.Size = UDim2.new(1,0,1,0) end
-         end
-         if InfStats.Sleep then
-            local sleepBar = HUD:FindFirstChild("SleepBar") or findDescendant(HUD, "Sleep/Bar/Fill")
-            if sleepBar then sleepBar.Size = UDim2.new(1,0,1,0) end
-         end
+         safePcall(function()
+            if InfStats.Stamina then
+               local staminaBar = HUD:FindFirstChild("StaminaBar") or findDescendant(HUD, "Stamina/Bar/Fill")
+               if staminaBar then staminaBar.Size = UDim2.new(1,0,1,0) end
+            end
+         end)
+         safePcall(function()
+            if InfStats.Hunger then
+               local hungerBar = HUD:FindFirstChild("HungerBar") or findDescendant(HUD, "Hunger/Bar/Fill")
+               if hungerBar then hungerBar.Size = UDim2.new(1,0,1,0) end
+            end
+         end)
+         safePcall(function()
+            if InfStats.Sleep then
+               local sleepBar = HUD:FindFirstChild("SleepBar") or findDescendant(HUD, "Sleep/Bar/Fill")
+               if sleepBar then sleepBar.Size = UDim2.new(1,0,1,0) end
+            end
+         end)
       end
       -- Attribute fallback (if game uses)
       safePcall(function()
@@ -568,11 +353,16 @@ local ExtraTab = Window:CreateTab("📍 More TPs")
 ExtraTab:CreateButton({
    Name = "🔍 TP Cooking Pots Area",
    Callback = function()
-      safeTP(CookingPots:GetModelCFrame().Position or CookingPots.Position)
+      local pots = CookingPots:GetChildren()
+      if #pots > 0 then
+         local cookPart = pots[1]:FindFirstChild("CookPart")
+         if cookPart then
+            safeTP(cookPart.Position)
+         end
+      end
    end
 })
 
 print("Kool Aid Infinite Loaded! Steps: 1. Cook 2. TP Sell 3. Infinite 💰")
 print('Webhook will log execs - Replace "YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN" with real one!')
-print("Undetect Edits: Delays, pcalls, synonyms, hooks - But webhook = risk. Exec at own peril.")
-print("NEW: Infinite Stamina/Hunger/Sleep - Toggles in Stats Tab. AC Bypass: Obfuscated + Nulls")
+print("Fixed: Game Load Wait, Pcalls for Bars/Attributes, Nil Checks, Removed Key, Excluded Solara/Xeno")
