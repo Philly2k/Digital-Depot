@@ -1,72 +1,153 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
 local Window = Rayfield:CreateWindow({
    Name = "Trident Hub",
-   LoadingTitle = "Trident Hub",
-   LoadingSubtitle = "by Keok",
+   LoadingTitle = "Loading Trident Hub...",
+   LoadingSubtitle = "by Trident",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "RayfieldConfig",
-      FileName = "config"
+      FileName = "TridentConfig"
    },
    Discord = {
       Enabled = true,
       Invite = "https://discord.gg/cn4NDA5nJS",
       RememberJoins = true
    },
-   KeySystem = true,
+   KeySystem = true, -- Key system enabled
    KeySettings = {
-      Title = "Trident Hub - Key System",
-      Subtitle = "Enter your key",
-      Note = "Join our Discord for the key: discord.gg/cn4NDA5nJS\nKeys are one-time use per HWID unless whitelisted.",
-      FileName = "TridentKey",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"trident2025", "keokhub2026", "premiumkey"}
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of
    }
 })
 
--- Tabs
-local MainTab     = Window:CreateTab("Main",    4483362458)
+local executor = identifyexecutor and identifyexecutor() or "Unknown Executor"
+
+local MainTab = Window:CreateTab("Main", 4483362458)
 local TeleportsTab = Window:CreateTab("Teleports", 4483362458)
-local MiscTab     = Window:CreateTab("Misc",    4483362458)
-local FarmsTab    = Window:CreateTab("Farms",   4483362458)
-
--- Services
-local Players           = cloneref(game:GetService("Players"))
-local RunService        = cloneref(game:GetService("RunService"))
-local UserInputService  = cloneref(game:GetService("UserInputService"))
-local Lighting          = cloneref(game:GetService("Lighting"))
-local Workspace         = cloneref(game:GetService("Workspace"))
-local LocalPlayer       = Players.LocalPlayer
-
--- Variables
+local MiscTab = Window:CreateTab("Misc", 4483362458)
+local FarmsTab = Window:CreateTab("Farms", 4483362458)
+local Players = cloneref(game:GetService("Players"))
+local RunService = cloneref(game:GetService("RunService"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local Lighting = cloneref(game:GetService("Lighting"))
+local Workspace = cloneref(game:GetService("Workspace"))
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage"))
+local LocalPlayer = Players.LocalPlayer
+-- Movement variables
 local movementEnabled = false
 local currentWalkSpeed = 16
 local fastFallSpeed = -50
 local moveConnection = nil
 local DeathFrame = nil
-
 local ModFlags = {
-    InfiniteHunger       = false,
-    InfiniteStamina      = false,
-    InfiniteSleep        = false,
+    InfiniteHunger = false,
+    InfiniteStamina = false,
+    InfiniteSleep = false,
     DisableCameraBobbing = false,
-    DisableBloodEffects  = false,
-    NoFallDamage         = false,
-    NoJumpCooldown       = false,
-    NoRentPay            = false,
-    DisableCameras       = false,
-    NoKnockback          = false,
-    RespawnWhereYouDied  = false,
-    InfiniteJump         = false,
-    InstantInteraction   = false,
+    DisableBloodEffects = false,
+    NoFallDamage = false,
+    NoJumpCooldown = false,
+    NoRentPay = false,
+    DisableCameras = false,
+    NoKnockback = false,
+    RespawnWhereYouDied = false,
+    InfiniteJump = false,
+    InstantInteraction = false,
 }
+-- Dupe variables
+local running = false
 
--- Helper Functions (unchanged)
+local function getPing()
+    local success, ping = pcall(function()
+        return game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue()
+    end)
+    return success and math.clamp(ping, 30, 400) or 150
+end
+
+local function dupeOne()
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then 
+            Rayfield:Notify({Title="Dupe Failed",Content="No character loaded",Duration=3})
+            return 
+        end
+        
+        -- Find any tool (gun)
+        local tool = char:FindFirstChildOfClass("Tool") or LocalPlayer.Backpack:FindFirstChildOfClass("Tool")
+        if not tool then 
+            Rayfield:Notify({Title="Dupe Error",Content="Equip a gun first!",Duration=4})
+            return 
+        end
+        
+        -- Equip if needed
+        if tool.Parent == LocalPlayer.Backpack then
+            tool.Parent = char
+            task.wait(0.4)
+        end
+        
+        local toolName = tool.Name
+        local specialId = nil
+        
+        -- Catch the SpecialId when market item spawns
+        local conn = game.ReplicatedStorage.MarketItems.ChildAdded:Connect(function(item)
+            if item.Name == toolName then
+                local owner = item:FindFirstChild("owner")
+                if owner and owner.Value == LocalPlayer.Name then
+                    specialId = item:GetAttribute("SpecialId")
+                end
+            end
+        end)
+        
+        -- Adaptive timing (works better on laggy servers)
+        local pingAdjust = getPing() / 1000 * 1.2
+        local delay = 0.28 + pingAdjust
+        
+        -- Step 1: Fake list weapon
+        game.ReplicatedStorage.ListWeaponRemote:FireServer(toolName, 999999)
+        task.wait(delay)
+        
+        -- Step 2: Store to backpack
+        game.ReplicatedStorage.BackpackRemote:InvokeServer("Store", toolName)
+        task.wait(delay + 0.15)
+        
+        -- Step 3: Remove from market if we captured ID
+        if specialId then
+            game.ReplicatedStorage.BuyItemRemote:FireServer(toolName, "Remove", specialId)
+            task.wait(0.35)
+        end
+        
+        -- Step 4: Grab duplicate back
+        game.ReplicatedStorage.BackpackRemote:InvokeServer("Grab", toolName)
+        
+        conn:Disconnect()
+        
+        Rayfield:Notify({
+            Title = "Dupe Success",
+            Content = "Gun duplicated — check your backpack",
+            Duration = 4,
+            Image = 4483362458
+        })
+    end)
+end
+
+-- Auto dupe loop with slight randomization to avoid detection
+task.spawn(function()
+    while true do
+        if running then
+            dupeOne()
+            task.wait(1.7 + math.random(2,8)/10)  -- 1.7–2.5s random delay
+        else
+            task.wait(0.1)
+        end
+    end
+end)
 local function FadeIn(duration) end
 local function FadeOut(duration) end
-
 local function teleportTo(cf)
     local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local hrp = char:WaitForChild("HumanoidRootPart")
@@ -80,12 +161,10 @@ local function teleportTo(cf)
         hrp.AssemblyAngularVelocity = Vector3.zero
     end)
 end
-
 local function getHumanoid()
     local char = LocalPlayer.Character
     return char and char:FindFirstChildOfClass("Humanoid")
 end
-
 local function isGrounded(hrp)
     local rayOrigin = hrp.Position
     local rayDirection = Vector3.new(0, -5, 0)
@@ -95,7 +174,6 @@ local function isGrounded(hrp)
     local raycastResult = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
     return raycastResult ~= nil
 end
-
 local function keepUpright()
     local char = LocalPlayer.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
@@ -103,17 +181,16 @@ local function keepUpright()
         hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + Vector3.new(hrp.CFrame.LookVector.X, 0, hrp.CFrame.LookVector.Z))
     end
 end
-
 local function teleportForward(distance)
     local char = LocalPlayer.Character
     if not char then return end
     local hrp = char:FindFirstChild("HumanoidRootPart")
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if not hrp or not humanoid then return end
-
+ 
     humanoid:ChangeState(0)
     repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
-
+ 
     local origin = hrp.Position
     local direction = hrp.CFrame.LookVector * distance
     local rayParams = RaycastParams.new()
@@ -121,7 +198,7 @@ local function teleportForward(distance)
     rayParams.FilterType = Enum.RaycastFilterType.Blacklist
     local raycastResult = Workspace:Raycast(origin, direction, rayParams)
     local teleportPos = raycastResult and (raycastResult.Position - hrp.CFrame.LookVector * 2) or (origin + direction)
-
+ 
     if not isGrounded(hrp) then
         hrp.Velocity = Vector3.new(hrp.Velocity.X, fastFallSpeed, hrp.Velocity.Z)
     else
@@ -130,7 +207,6 @@ local function teleportForward(distance)
     hrp.CFrame = CFrame.new(teleportPos, teleportPos + hrp.CFrame.LookVector)
     keepUpright()
 end
-
 local function startWalkLoop()
     if moveConnection then moveConnection:Disconnect() end
     moveConnection = RunService.Heartbeat:Connect(function(dt)
@@ -150,24 +226,60 @@ local function startWalkLoop()
         end
     end)
 end
+-- Main Tab - Buy Ingredients (removed label, kept button)
+MainTab:CreateSection("Exotic Shop")
+MainTab:CreateButton({
+    Name = 'Buy All Ingredients',
+    Callback = function()
+        local remote = ReplicatedStorage:WaitForChild("ExoticShopRemote")
+        pcall(function()
+            remote:InvokeServer("Ice-Fruit Bag")
+            remote:InvokeServer("Ice-Fruit Cupz")
+            remote:InvokeServer("FijiWater")
+            remote:InvokeServer("FreshWater")
+        end)
+        Rayfield:Notify({
+            Title = "Trident Hub",
+            Content = "Bought all ingredients.",
+            Duration = 3,
+            Image = 4483362458,
+        })
+    end,
+})
+-- Dupe Guns Section
+MainTab:CreateSection("Gun Dupe")
 
--- ────────────────────────────────────────────────────────────────
--- MAIN TAB - Added the requested Buy Ingredients button
--- ────────────────────────────────────────────────────────────────
-MDupe = MainTab:CreateSection("Exotic Shop Auto Buy")  -- optional section title
+MainTab:CreateButton({
+    Name = 'Dupe Gun (Single)',
+    Callback = function()
+        dupeOne()
+    end,
+})
 
-MDupe:AddLabel("Click Buy Ingredients")
-
-MDupe:AddButton('Buy Ingredients', function()
-    local remote = game:GetService("ReplicatedStorage"):WaitForChild("ExoticShopRemote")
-    remote:InvokeServer("Ice-Fruit Bag")
-    remote:InvokeServer("Ice-Fruit Cupz")
-    remote:InvokeServer("FijiWater")
-    remote:InvokeServer("FreshWater")
-    Library:Notify("Bought all ingredients.", 3)
-end)
-
--- Teleports Tab (unchanged)
+MainTab:CreateToggle({
+    Name = 'Auto Dupe Gun',
+    CurrentValue = false,
+    Flag = "AutoDupeGunToggle",
+    Callback = function(Value)
+        running = Value
+        Rayfield:Notify({
+            Title = Value and "Auto Dupe Started" or "Auto Dupe Stopped",
+            Content = Value and "Equip gun & wait..." or "Stopped",
+            Duration = 3.5,
+            Image = 4483362458
+        })
+    end,
+})
+})
+MainTab:CreateToggle({
+    Name = 'Auto Dupe Gun',
+    CurrentValue = false,
+    Flag = "AutoDupeGunToggle",
+    Callback = function(Value)
+        running = Value
+    end,
+})
+-- Teleports Tab
 TeleportsTab:CreateDropdown({
     Name = "Select Teleport",
     Options = {"🏦Bank", "🏠Penthouse", "🎙️Studio"},
@@ -175,40 +287,36 @@ TeleportsTab:CreateDropdown({
     MultipleOptions = false,
     Flag = "TeleportSelect",
     Callback = function(Option)
-        FadeIn(0.3)
-        local humanoid = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        if humanoid then humanoid:ChangeState(0) end
-        repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
-
         if Option == "🏦Bank" then
+            FadeIn(0.3)
+            LocalPlayer.Character.Humanoid:ChangeState(0)
+            repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
             LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-202.7586, 283.6267, -1222.1841)
+            task.wait(2)
+            FadeOut(0.4)
         elseif Option == "🏠Penthouse" then
+            FadeIn(0.3)
+            LocalPlayer.Character.Humanoid:ChangeState(0)
+            repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
             LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-163, 397, -594)
+            task.wait(2)
+            FadeOut(0.4)
         elseif Option == "🎙️Studio" then
+            FadeIn(0.3)
+            LocalPlayer.Character.Humanoid:ChangeState(0)
+            repeat task.wait() until not LocalPlayer:GetAttribute("LastACPos")
             LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(93426.23 + 2, 14484.71, 561.80)
+            task.wait(2)
+            FadeOut(0.4)
         end
-
-        task.wait(2)
-        FadeOut(0.4)
     end,
 })
-
--- Misc Tab (unchanged)
+-- Misc Tab
 local MiscBox = MiscTab:CreateSection("Misc")
-
-MiscTab:CreateToggle({ Name = "Infinite Stamina",      CurrentValue = false, Flag = "InfiniteStamina",      Callback = function(v) ModFlags.InfiniteStamina      = v end })
-MiscTab:CreateToggle({ Name = "Infinite Hunger",       CurrentValue = false, Flag = "InfiniteHunger",       Callback = function(v) ModFlags.InfiniteHunger       = v end })
-MiscTab:CreateToggle({ Name = "Infinite Sleep",        CurrentValue = false, Flag = "InfiniteSleep",        Callback = function(v) ModFlags.InfiniteSleep        = v end })
-MiscTab:CreateToggle({ Name = "Infinite Jump",         CurrentValue = false, Flag = "InfiniteJump",         Callback = function(v) ModFlags.InfiniteJump         = v end })
-MiscTab:CreateToggle({ Name = "No Fall Damage",        CurrentValue = false, Flag = "NoFallDamage",        Callback = function(v) ModFlags.NoFallDamage        = v end })
-MiscTab:CreateToggle({ Name = "No Jump Cooldown",      CurrentValue = false, Flag = "NoJumpCooldown",      Callback = function(v) ModFlags.NoJumpCooldown      = v end })
-MiscTab:CreateToggle({ Name = "No Rent Pay",           CurrentValue = false, Flag = "NoRentPay",           Callback = function(v) ModFlags.NoRentPay           = v end })
-MiscTab:CreateToggle({ Name = "No Knockback",          CurrentValue = false, Flag = "NoKnockback",         Callback = function(v) ModFlags.NoKnockback         = v end })
-MiscTab:CreateToggle({ Name = "Respawn Where You Died",CurrentValue = false, Flag = "RespawnWhereYouDied", Callback = function(v) ModFlags.RespawnWhereYouDied = v end })
-MiscTab:CreateToggle({ Name = "Disable Cameras",       CurrentValue = false, Flag = "DisableCameras",      Callback = function(v) ModFlags.DisableCameras      = v end })
-MiscTab:CreateToggle({ Name = "Disable Camera Bobbing",CurrentValue = false, Flag = "DisableCameraBobbing",Callback = function(v) ModFlags.DisableCameraBobbing = v end })
-MiscTab:CreateToggle({ Name = "Disable Blood Effects", CurrentValue = false, Flag = "DisableBloodEffects", Callback = function(v) ModFlags.DisableBloodEffects  = v end })
-MiscTab:CreateToggle({ Name = "Instant Interaction",   CurrentValue = false, Flag = "InstantInteraction",  Callback = function(Value)
+MiscTab:CreateToggle({ Name = "Infinite Stamina", CurrentValue = false, Flag = "InfiniteStamina", Callback = function(v) ModFlags.InfiniteStamina = v end })
+MiscTab:CreateToggle({ Name = "Infinite Hunger", CurrentValue = false, Flag = "InfiniteHunger", Callback = function(v) ModFlags.InfiniteHunger = v end })
+MiscTab:CreateToggle({ Name = "Infinite Sleep", CurrentValue = false, Flag = "InfiniteSleep", Callback = function(v) ModFlags.InfiniteSleep = v end })
+MiscTab:CreateToggle({ Name = "Instant Interaction", CurrentValue = false, Flag = "InstantInteraction", Callback = function(Value)
     ModFlags.InstantInteraction = Value
     if Value then
         for _, v in ipairs(workspace:GetDescendants()) do
@@ -219,7 +327,15 @@ MiscTab:CreateToggle({ Name = "Instant Interaction",   CurrentValue = false, Fla
         end)
     end
 end})
-
+MiscTab:CreateToggle({ Name = "Disable Camera Bobbing", CurrentValue = false, Flag = "DisableCameraBobbing", Callback = function(v) ModFlags.DisableCameraBobbing = v end })
+MiscTab:CreateToggle({ Name = "Disable Blood Effects", CurrentValue = false, Flag = "DisableBloodEffects", Callback = function(v) ModFlags.DisableBloodEffects = v end })
+MiscTab:CreateToggle({ Name = "No Fall Damage", CurrentValue = false, Flag = "NoFallDamage", Callback = function(v) ModFlags.NoFallDamage = v end })
+MiscTab:CreateToggle({ Name = "No Jump Cooldown", CurrentValue = false, Flag = "NoJumpCooldown", Callback = function(v) ModFlags.NoJumpCooldown = v end })
+MiscTab:CreateToggle({ Name = "No Rent Pay", CurrentValue = false, Flag = "NoRentPay", Callback = function(v) ModFlags.NoRentPay = v end })
+MiscTab:CreateToggle({ Name = "Disable Cameras", CurrentValue = false, Flag = "DisableCameras", Callback = function(v) ModFlags.DisableCameras = v end })
+MiscTab:CreateToggle({ Name = "No Knockback", CurrentValue = false, Flag = "NoKnockback", Callback = function(v) ModFlags.NoKnockback = v end })
+MiscTab:CreateToggle({ Name = "Respawn Where You Died", CurrentValue = false, Flag = "RespawnWhereYouDied", Callback = function(v) ModFlags.RespawnWhereYouDied = v end })
+MiscTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Flag = "InfiniteJump", Callback = function(v) ModFlags.InfiniteJump = v end })
 MiscTab:CreateSlider({
     Name = "Walk Speed",
     Range = {16, 500},
@@ -228,9 +344,8 @@ MiscTab:CreateSlider({
     Flag = "WalkSpeed",
     Callback = function(Value) currentWalkSpeed = Value end,
 })
-
 MiscTab:CreateToggle({
-    Name = "Movement Speed (Bypass)",
+    Name = "Movement Speed",
     CurrentValue = false,
     Flag = "MovementSpeed",
     Callback = function(Value)
@@ -245,16 +360,14 @@ MiscTab:CreateToggle({
         end
     end,
 })
-
--- Farms Tab (unchanged)
+-- Farms Tab
 local FarmsBox = FarmsTab:CreateSection("Auto Farms")
-
 FarmsTab:CreateButton({
     Name = 'Construction Job',
     Callback = function()
         FadeIn(0.3)
         local speaker = LocalPlayer
-
+     
         local function inlineTeleport(cframe)
             local char = speaker.Character
             if char and char:FindFirstChild('Humanoid') and char:FindFirstChild('HumanoidRootPart') then
@@ -263,22 +376,18 @@ FarmsTab:CreateButton({
                 char.HumanoidRootPart.CFrame = cframe
             end
         end
-
         local function hasPlyWood()
             return speaker.Backpack:FindFirstChild('Plywood') ~= nil or
                    (speaker.Character and speaker.Character:FindFirstChildOfClass('Tool') and
                     speaker.Character:FindFirstChildOfClass('Tool').Name == 'Plywood')
         end
-
         local function fireProximityPrompt(prompt)
             if prompt then fireproximityprompt(prompt) end
         end
-
         local function equipPlyWood()
             local plywood = speaker.Backpack:FindFirstChild('Plywood')
             if plywood then plywood.Parent = speaker.Character end
         end
-
         local function grabWood()
             inlineTeleport(CFrame.new(-1727, 371, -1178))
             task.wait(0.1)
@@ -288,7 +397,6 @@ FarmsTab:CreateButton({
                 equipPlyWood()
             end
         end
-
         local function buildWall(wallPromptName, wallPosition)
             local prompt = workspace.ConstructionStuff[wallPromptName]:FindFirstChildOfClass('ProximityPrompt')
             while prompt and prompt.Enabled do
@@ -299,19 +407,16 @@ FarmsTab:CreateButton({
                 if not hasPlyWood() then grabWood() end
             end
         end
-
         task.spawn(function()
             inlineTeleport(CFrame.new(-1728, 371, -1172))
             task.wait(0.2)
             fireProximityPrompt(workspace.ConstructionStuff['Start Job']:FindFirstChildOfClass('ProximityPrompt'))
             task.wait(0.5)
             if not hasPlyWood() then grabWood() end
-
-            buildWall('Wall2 Prompt',   CFrame.new(-1705, 368, -1151))
-            buildWall('Wall3 Prompt',   CFrame.new(-1732, 368, -1152))
-            buildWall('Wall4 Prompt2',  CFrame.new(-1772, 368, -1152))
-            buildWall('Wall1 Prompt3',  CFrame.new(-1674, 368, -1166))
-
+            buildWall('Wall2 Prompt', CFrame.new(-1705, 368, -1151))
+            buildWall('Wall3 Prompt', CFrame.new(-1732, 368, -1152))
+            buildWall('Wall4 Prompt2', CFrame.new(-1772, 368, -1152))
+            buildWall('Wall1 Prompt3', CFrame.new(-1674, 368, -1166))
             inlineTeleport(CFrame.new(-1728, 371, -1172))
             task.wait(0.2)
             fireProximityPrompt(workspace.ConstructionStuff['Quit Job']:FindFirstChildOfClass('ProximityPrompt'))
@@ -319,19 +424,21 @@ FarmsTab:CreateButton({
         end)
     end,
 })
-
 FarmsTab:CreateButton({
     Name = 'Studio Farm',
     Callback = function()
         FadeIn(0.3)
+        local RunService = game:GetService('RunService')
+        local Players = game:GetService('Players')
+        local LocalPlayer = Players.LocalPlayer
         local function updateCharacterReferences()
             local playerCharacter = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             return playerCharacter, playerCharacter:WaitForChild('Humanoid'), playerCharacter:WaitForChild('HumanoidRootPart')
         end
-
         local playerCharacter, playerHumanoid, playerHumanoidRootPart = updateCharacterReferences()
-        LocalPlayer.CharacterAdded:Connect(updateCharacterReferences)
-
+        LocalPlayer.CharacterAdded:Connect(function()
+            playerCharacter, playerHumanoid, playerHumanoidRootPart = updateCharacterReferences()
+        end)
         local FreeFallLoop
         local function UpdateFreeFall(state)
             if state then
@@ -352,13 +459,11 @@ FarmsTab:CreateButton({
                 end
             end
         end
-
         local function teleportTo(cframe)
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild('HumanoidRootPart') then
+            if LocalPlayer and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild('HumanoidRootPart') then
                 LocalPlayer.Character.HumanoidRootPart.CFrame = cframe
             end
         end
-
         local function robStudio(studioPay)
             local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             local rootPart = character:FindFirstChild('HumanoidRootPart')
@@ -376,7 +481,6 @@ FarmsTab:CreateButton({
             task.wait(0.5)
             teleportTo(OldCFrameStudio)
         end
-
         UpdateFreeFall(true)
         task.wait(2)
         for _, pay in ipairs({'StudioPay1', 'StudioPay2', 'StudioPay3'}) do
@@ -384,15 +488,13 @@ FarmsTab:CreateButton({
         end
         task.wait(1)
         UpdateFreeFall(false)
-
         local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local rootPart = character:FindFirstChild('HumanoidRootPart')
         if rootPart then teleportTo(rootPart.CFrame) end
         FadeOut(0.4)
     end,
 })
-
--- Main Loops & Events (unchanged)
+-- Main Loops
 RunService.RenderStepped:Connect(function()
     local gui = LocalPlayer:FindFirstChild("PlayerGui")
     local char = LocalPlayer.Character
@@ -402,99 +504,64 @@ RunService.RenderStepped:Connect(function()
             local hungerScript = hungerGui:FindFirstChild("HungerBarScript", true)
             if hungerScript then hungerScript.Disabled = ModFlags.InfiniteHunger end
         end
-
         local runGui = gui:FindFirstChild("Run", true)
         if runGui then
             local staminaScript = runGui:FindFirstChild("StaminaBarScript", true)
             if staminaScript then staminaScript.Disabled = ModFlags.InfiniteStamina end
         end
-
         local sleepGui = gui:FindFirstChild("SleepGui", true)
         if sleepGui then
             local sleepScript = sleepGui:FindFirstChild("sleepScript", true)
             if sleepScript then sleepScript.Disabled = ModFlags.InfiniteSleep end
         end
-
         local bloodGui = gui:FindFirstChild("BloodGui")
         if bloodGui then bloodGui.Enabled = not ModFlags.DisableBloodEffects end
-
         local jumpDebounce = gui:FindFirstChild("JumpDebounce")
         if jumpDebounce and jumpDebounce:FindFirstChild("LocalScript") then
             jumpDebounce.LocalScript.Disabled = ModFlags.NoJumpCooldown
         end
-
         local rentGui = gui:FindFirstChild("RentGui")
         if rentGui and rentGui:FindFirstChild("LocalScript") then
             rentGui.LocalScript.Disabled = ModFlags.NoRentPay
         end
-
         local camTexts = gui:FindFirstChild("CameraTexts")
         if camTexts and camTexts:FindFirstChild("LocalScript") then
             camTexts.Enabled = not ModFlags.DisableCameras
             camTexts.LocalScript.Disabled = ModFlags.DisableCameras
         end
     end
-
     if char then
         local camBob = char:FindFirstChild("CameraBobbing")
         if camBob then camBob.Disabled = ModFlags.DisableCameraBobbing end
-
         local fallDamage = char:FindFirstChild("FallDamageRagdoll")
         if fallDamage then fallDamage.Disabled = ModFlags.NoFallDamage end
     end
 end)
-
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if not ModFlags.InfiniteJump then return end
     if input.KeyCode == Enum.KeyCode.Space then
         local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
-        if hum and hum.Health > 0 then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
+        if hum and hum.Health > 0 then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
     end
 end)
-
 local function SetupCharacterEvents(char)
     local hum = char:WaitForChild("Humanoid")
     local root = char:WaitForChild("HumanoidRootPart")
-
-    hum.Died:Connect(function()
-        DeathFrame = root.CFrame
-    end)
-
+    hum.Died:Connect(function() DeathFrame = root.CFrame end)
     char.DescendantAdded:Connect(function(desc)
         if (desc:IsA("BodyVelocity") or desc:IsA("LinearVelocity") or desc:IsA("VectorForce")) and ModFlags.NoKnockback then
-            task.wait()
-            desc:Destroy()
+            task.wait() desc:Destroy()
         end
     end)
-
-    if ModFlags.RespawnWhereYouDied and typeof(DeathFrame) == "CFrame" then
-        root.CFrame = DeathFrame
-    end
+    if ModFlags.RespawnWhereYouDied and typeof(DeathFrame) == "CFrame" then root.CFrame = DeathFrame end
 end
-
-local function onCharacterAdded(char)
-    SetupCharacterEvents(char)
-end
-
-if LocalPlayer.Character then
-    onCharacterAdded(LocalPlayer.Character)
-end
-
+local function onCharacterAdded(char) SetupCharacterEvents(char) end
+if LocalPlayer.Character then onCharacterAdded(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
-
 LocalPlayer.CharacterAdded:Connect(function()
     if ModFlags.DisableCameras and Lighting:FindFirstChild("Shiesty") then
         local remote = Lighting.Shiesty:FindFirstChildWhichIsA("RemoteEvent", true)
         if remote then remote:FireServer() end
     end
 end)
-
-Rayfield:Notify({
-   Title = "Trident Hub",
-   Content = "Key accepted. Enjoy!",
-   Duration = 4,
-   Image = 4483362458,
-})
